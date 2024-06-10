@@ -343,18 +343,13 @@ BEGIN
 							  ELSE ''NO''
 							  END AS ''IsUpgrade'',
 
-							  --isnull(upt.UpgradedLicenseID,0) as ''Upgrade_From_License ID'',
 							  CASE 
-							    WHEN upt.LicenseID IS NOT NULL THEN CONVERT(VARCHAR(20), upt.LicenseID) 
+							    WHEN upt.LicenseID IS NOT NULL THEN CONVERT(VARCHAR(20), upt.UpgradedLicenseID) 
 								ELSE ''''
 								END AS ''Upgrade_From_License ID'',
 								
-
-							  --isnull(upt.UpgradedLegalLicenseCount, 0) as ''Base_License_Quantity_to_Upgrade'',
 							  ISNULL(CONVERT(VARCHAR(20), upt.UpgradedLegalLicenseCount), '''') AS ''Base_License_Quantity_to_Upgrade'',
 
-							  --l.LegalLicenseCount AS ''Quantity'',
-							  --ISNULL(CONVERT(VARCHAR(20), l.LegalLicenseCount), '''') AS ''Quantity'',
 							  CASE 
 						      WHEN lu.UpgradedLicenseCount <> '''' THEN CONVERT(VARCHAR(20), lu.UpgradedLicenseCount + l.LegalLicenseCount)
 							  ELSE CONVERT(VARCHAR(20), l.LegalLicenseCount)
@@ -366,20 +361,10 @@ BEGIN
 							WHEN ISNULL(l.IsSubscription, 0) = 1 THEN ''YES''
 							ELSE ''NO''	
 							END AS IsSubscription,
-							  --ISNULL(CAST(ROUND(((CASE
-									--WHEN (licCount.LegalLicenseCount IS NOT NULL) THEN licCount.LicensePurchaseCost
-									--ELSE ISNULL(distributedLicCount.UserPurchaseValue, l.PurchaseValueBase)
-							  --END) * uc.BaseCurrencyRate), 2) AS VARCHAR(20)), '''') as ''Purchase_Price'',
-							  CASE 
-								WHEN ROUND(((CASE
-								WHEN (licCount.LegalLicenseCount IS NOT NULL) THEN licCount.LicensePurchaseCost
-								ELSE ISNULL(distributedLicCount.UserPurchaseValue, l.PurchaseValueBase)
-								END) * uc.BaseCurrencyRate), 2) IS NULL THEN ''0''
-								ELSE CAST(ROUND(((CASE
-								WHEN (licCount.LegalLicenseCount IS NOT NULL) THEN licCount.LicensePurchaseCost
-								ELSE ISNULL(distributedLicCount.UserPurchaseValue, l.PurchaseValueBase)
-								END) * uc.BaseCurrencyRate), 2) AS VARCHAR(20))
-							  END AS ''Purchase_Price'',
+							  ISNULL(CAST(ROUND(((CASE
+									WHEN (licCount.LegalLicenseCount IS NOT NULL) THEN licCount.LicensePurchaseCost
+									ELSE ISNULL(distributedLicCount.UserPurchaseValue, l.PurchaseValueBase)
+							  END) * uc.BaseCurrencyRate), 2) AS VARCHAR(20)), '''') as ''Purchase_Price'',
 
 							  l.PurchaseCurrency as ''Purchase_Currency'',
 							  --''Manually Currency'' as ''Purchase Currency'',
