@@ -367,23 +367,17 @@ BEGIN
 							  END) * uc.BaseCurrencyRate), 2) AS VARCHAR(20)), '''') as ''Purchase_Price'',
 
 							  l.PurchaseCurrency as ''Purchase_Currency'',
-							  --''Manually Currency'' as ''Purchase Currency'',
-							  CASE 
-							 WHEN ISNULL(lurs.HasDowngradeRights, 0) = 1 THEN ''YES''
-								ELSE ''NO''
-							END AS Downgrade_Rights,
+							  --''Manual Currency Entry'' as ''Purchase Currency'',
+							  convert(bit, isnull(lurs.IsCrossPlatform, 0)) as ''Cross Platform Rights'',
+							  convert(bit, isnull(lurs.HasCrossedRights, 0)) as ''Cross Edition Rights'',
+							  convert(bit, isnull(lurs.HasDowngradeRights, 0)) as ''Downgrade Rights'',
+							  isnull(l.IsAutoAllocated,0) as ''Auto allocate (distribute) license'',
+							  isnull(l.AutoAllocateOnce,0) as ''Auto allocate license only once'',
+							  isnull(mp.UpgradeRights, 0) as ''Maintenance Includes Upgrade Rights'',
 							CASE 
-							WHEN ISNULL(l.IsAutoAllocated, 0) = 1 THEN ''YES''
-							ELSE ''NO''	
-							END AS Auto_allocate_distribute_license,
-						CASE 
-						WHEN ISNULL(mp.UpgradeRights, 0) = 1 THEN ''YES''
-						ELSE ''NO''
-						END AS Maintenance_Includes_Upgrade_Rights,
-						CASE 
-						WHEN l.MaintenanceAccordingtoAgreement IS NULL THEN ''YES''
-						ELSE ''NO''
-						END AS Maintenance_According_to_Agreement,
+							WHEN l.MaintenanceAccordingtoAgreement IS NULL THEN ''YES''
+							ELSE ''NO''
+							END AS Maintenance_According_to_Agreement,
 							  ISNULL(CONVERT(VARCHAR(10), mp.PeriodFrom, 103), '''') AS ''Maintenance_and_Support_Valid_From'',
 							  ISNULL(CONVERT(VARCHAR(10), mp.PeriodTo, 103), '''') AS ''Maintenance_and_Support_Valid_To'',
 							  isnULL(c.[AssignedID],'''') as ''Agreement_Number'',
