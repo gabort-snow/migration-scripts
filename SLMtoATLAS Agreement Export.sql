@@ -2,6 +2,9 @@
 --v2 build. This will pull the necessary values from an SLM SQL. Note the CID,USERID you use as this is default to 1,1 respectively.
 --Review Legal Organization. When Org values are missing, this script will default the value to ROOT.
 --Ensure that all NULL values are removed from the output document prior to using in upload.
+--20240812 Changes
+---Corrected Master Agreement column pull --Line 126
+---Added support for Custom Agreement Types --Lines 144 and 220-221
 
 
 USE [SnowLicenseManager]
@@ -138,7 +141,7 @@ BEGIN
 			WHEN c.ContractType = 3 THEN ''PURCHASE''
 			WHEN c.ContractType = 4 THEN ''CUSTOM''
 			WHEN c.ContractType = 5 THEN ''ORACLE''
-			ELSE ''Unknown'' -- Update as I use this
+			ELSE ISNULL(ct.TypeName, ''Unknown'')
 			END AS ''Agreement Type'',
 		CASE
 			WHEN c.IsUpgradable = 0 THEN ''NO''
@@ -213,7 +216,9 @@ BEGIN
 			and cc.ContractID = c.ContractID	
 		left outer join oc on
 			oc.CID = c.CID
-			and oc.ContractID = c.ContractID					
+			and oc.ContractID = c.ContractID
+		LEFT JOIN dbo.tblContractCustomTypes ct
+    			ON c.ContractType = ct.TypeID
 	WHERE 
 		c.CID = @CID
 		AND 
