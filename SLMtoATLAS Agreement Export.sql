@@ -150,7 +150,7 @@ BEGIN
 		c.LocalContactEmail AS ''Contact phone (local contact)'',
 		c.RenewalDays AS ''Renewal days'',
 		c.WarningDayLimit AS ''Warning Days'',
-		c.CriticalDayLimit ''Crityical days'',
+		c.CriticalDayLimit ''Critical days'',
 		c.Description AS ''Description'',
 		ISNULL((SELECT mc.AssignedID FROM tblContract mc WHERE mc.ContractID = c.MasterContractID ),'''') as ''Master Agreement Number'',
 		CASE
