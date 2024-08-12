@@ -2,9 +2,6 @@
 --v2 build. This will pull the necessary values from an SLM SQL. Note the CID,USERID you use as this is default to 1,1 respectively.
 --Review Legal Organization. When Org values are missing, this script will default the value to ROOT.
 --Ensure that all NULL values are removed from the output document prior to using in upload.
---20240812 Changes
----Corrected Master Agreement column pull --Line 126
----Added support for Custom Agreement Types --Lines 144 and 220-221
 
 
 USE [SnowLicenseManager]
@@ -133,6 +130,24 @@ BEGIN
     END AS Manufacturer,
 		c.[Name] as ''Agreement Name'',
 		c.AssignedID As ''Agreement Number'',
+		CASE
+			WHEN c.IsValidForAll = 0 THEN ''NO''
+			WHEN c.IsValidForAll = 1 THEN ''YES''
+			ELSE ''''
+			END AS ''Searchable outside period'',
+		c.ManufacturerLink AS ''Website (manufacturer)'',
+		c.ManufacturerPhone AS ''Phone (manufacturer)'',
+		c.ManufacturerContact AS ''Contact (manufacturer)'',
+		c.ManufacturerContactEmail AS ''Contact email (manufacturer)'',
+		c.ManufacturerContactPhone AS  ''Contact phone (manufacturer)'',
+		c.LocalContact AS ''Local Contact'',
+		c.LocalContactDepartment AS ''Department (local contact)'',
+		c.LocalContactPhone AS ''Contact email (local contact)'',
+		c.LocalContactEmail AS ''Contact phone (local contact)'',
+		c.RenewalDays AS ''Renewal days'',
+		c.WarningDayLimit AS ''Warning Days'',
+		c.CriticalDayLimit ''Crityical days'',
+		c.Description AS ''Description'',
 		ISNULL((SELECT mc.AssignedID FROM tblContract mc WHERE mc.ContractID = c.MasterContractID ),'''') as ''Master Agreement Number'',
 		CASE
 			WHEN c.ContractType = 0 THEN ''SOFTWARE''
@@ -162,7 +177,7 @@ BEGIN
 			WHEN c.RestrictOrganization = 0 THEN ''NO''
 			WHEN c.RestrictOrganization = 1 THEN ''YES''
 			ELSE ''NULL''
-		END AS ''Restrict Organization''
+		END AS ''Restrict Organisation''
 		' + @cfColumns + ' --Working to Remove NULL values from output
 	FROM
 		dbo.tblContract c
@@ -218,7 +233,7 @@ BEGIN
 			oc.CID = c.CID
 			and oc.ContractID = c.ContractID
 		LEFT JOIN dbo.tblContractCustomTypes ct
-    			ON c.ContractType = ct.TypeID
+    ON c.ContractType = ct.TypeID
 	WHERE 
 		c.CID = @CID
 		AND 
