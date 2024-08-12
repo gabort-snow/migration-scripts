@@ -1,6 +1,8 @@
 --v2 Notes
 --Review output from Legal Organization. Column used is o.FriendlyName which may result in not matching data from customer's Atlas OrgName.
 --Remove any NULL values found in Custom Fields. Still working to output those as blank instead of NULL.
+--20240812
+---Added column to show incomplete licenses
 
 
 USE [SnowLicenseManager]
@@ -274,6 +276,10 @@ BEGIN
                set @q = @q + N'
                
                select distinct
+							  CASE 
+								WHEN l.IsIncomplete = 1 THEN ''Yes''
+								WHEN l.IsIncomplete = 0 THEN ''No''
+								END AS ''Is Incomplete'',
                               l.LicenseID AS ''License ID'',
                               -- DEFAULT COLUMNS 
                               a.Name AS ''Application Name'',
