@@ -2,6 +2,10 @@
 --v2 build. This will pull the necessary values from an SLM SQL. Note the CID,USERID you use as this is default to 1,1 respectively.
 --Review Legal Organization. When Org values are missing, this script will default the value to ROOT.
 --Ensure that all NULL values are removed from the output document prior to using in upload.
+--20240812 Changes
+---Corrected Master Agreement column pull --Line 126
+---Added support for Custom Agreement Types --Lines 144 and 220-221
+---Added additional fields for import available in Snow Atlas
 
 
 USE [SnowLicenseManager]
