@@ -6,7 +6,7 @@
 ---Corrected Master Agreement column pull --Line 126
 ---Added support for Custom Agreement Types --Lines 144 and 220-221
 ---Added additional fields for import available in Snow Atlas
-
+---Modified the ValidTo and ValidFrom pull to show the last used dates. This will allow us to import expired Agreements for historical use
 
 USE [SnowLicenseManager]
 GO
@@ -41,7 +41,6 @@ BEGIN
 	
 	declare @cfColumns nvarchar(max);
 	set @cfColumns = dbo.GetCustomFieldTableColumns(@cid, 4, 'cf', 1, @UserID, 1);
-
 
 	if @Parameters IS NOT NULL
 		set @Parameters = replace(@Parameters,'@CID',convert(nvarchar,@CID))
@@ -139,19 +138,22 @@ BEGIN
 			WHEN c.IsValidForAll = 1 THEN ''YES''
 			ELSE ''''
 			END AS ''Searchable outside period'',
-		c.ManufacturerLink AS ''Website (manufacturer)'',
-		c.ManufacturerPhone AS ''Phone (manufacturer)'',
-		c.ManufacturerContact AS ''Contact (manufacturer)'',
-		c.ManufacturerContactEmail AS ''Contact email (manufacturer)'',
-		c.ManufacturerContactPhone AS  ''Contact phone (manufacturer)'',
-		c.LocalContact AS ''Local Contact'',
-		c.LocalContactDepartment AS ''Department (local contact)'',
-		c.LocalContactPhone AS ''Contact phone (local contact)'',
-		c.LocalContactEmail AS ''Contact email (local contact)'',
-		c.RenewalDays AS ''Renewal days'',
-		c.WarningDayLimit AS ''Warning Days'',
-		c.CriticalDayLimit ''Critical days'',
-		c.Description AS ''Description'',
+		ISNULL(c.ManufacturerLink,'''') AS ''Website (manufacturer)'',
+		ISNULL(c.ManufacturerPhone,'''') AS ''Phone (manufacturer)'',
+		ISNULL(c.ManufacturerContact,'''') AS ''Contact (manufacturer)'',
+		ISNULL(c.ManufacturerContactEmail,'''') AS ''Contact email (manufacturer)'',
+		ISNULL(c.ManufacturerContactPhone,'''') AS  ''Contact phone (manufacturer)'',
+		ISNULL(c.LocalContact,'''') AS ''Local Contact'',
+		ISNULL(c.LocalContactDepartment,'''') AS ''Department (local contact)'',
+		ISNULL(c.LocalContactPhone,'''') AS ''Contact phone (local contact)'',
+		ISNULL(c.LocalContactEmail,'''') AS ''Contact email (local contact)'',
+		CASE 
+			WHEN c.RenewalDays IS NULL OR c.RenewalDays = 0 THEN '''' 
+			ELSE CONVERT(varchar, c.RenewalDays) 
+		END AS ''Renewal days'',
+		ISNULL(c.WarningDayLimit,'''') AS ''Warning Days'',
+		ISNULL(c.CriticalDayLimit,'''') AS ''Critical days'',
+		ISNULL(c.Description,'''') AS ''Description'',
 		ISNULL((SELECT mc.AssignedID FROM tblContract mc WHERE mc.ContractID = c.MasterContractID ),'''') as ''Master Agreement Number'',
 		CASE
 			WHEN c.ContractType = 0 THEN ''SOFTWARE''
@@ -172,11 +174,10 @@ BEGIN
 			WHEN c.IsSubscription = 1 THEN ''YES''
 			ELSE ''NULL''
 		END AS ''Subscription Agreement'',
-		ISNULL(CONVERT(varchar, cp.ValidFrom, 120), '''') as ''Valid From'', --output is dd/mm/yyyy
-		ISNULL(CONVERT(varchar, cp.ValidTo, 120), '''') as ''Valid To'',  --output is dd/mm/yyyy
+		ISNULL(CONVERT(varchar(10), cp2.ValidFrom, 23), '''') as ''Valid From'', -- Convert to YYYY-MM-DD
+		ISNULL(CONVERT(varchar(10), cp2.ValidTo, 23), '''') as ''Valid To'',  -- Convert to YYYY-MM-DD
 		c.AlertOnExpiration as ''Alert On Expiration'',
-		--''ROOT'' as LegalOrganisation, --USE if Organization is being defaulted to ROOT
-		COALESCE(o.FriendlyName, ''ROOT'') as ''Legal Organisation'', --This will default missing values to ROOT
+		COALESCE(o.FriendlyName, ''ROOT'') as ''Legal Organisation'',
 		CASE
 			WHEN c.RestrictOrganization = 0 THEN ''NO''
 			WHEN c.RestrictOrganization = 1 THEN ''YES''
@@ -185,27 +186,15 @@ BEGIN
 		' + @cfColumns + ' --Working to Remove NULL values from output
 	FROM
 		dbo.tblContract c
-		LEFT OUTER JOIN dbo.tblContractPeriod cp ON 
-			cp.CID = c.CID
-			AND cp.ContractID = c.ContractID
-			AND 
-			(
-				DATEADD(day, DATEDIFF(day, 0, GETDATE()), 0) 
-					BETWEEN DATEADD(day, DATEDIFF(day, 0, cp.ValidFrom), 0) 
-					AND DATEADD(day, DATEDIFF(day, 0, cp.ValidTo), 0)
-			)
 		LEFT OUTER JOIN dbo.tblContractPeriod cp2 ON 
 			cp2.CID = c.CID
 			AND cp2.ContractID = c.ContractID
 			AND cp2.ValidTo = 
 			(
-				SELECT TOP 1 
-					MAX(cpm.ValidTo) 
-				FROM 
-					dbo.tblContractPeriod cpm 
-				WHERE 
-					cpm.CID = c.CID
-					AND cpm.ContractID = cp2.ContractID 
+				SELECT MAX(cpm.ValidTo) 
+				FROM dbo.tblContractPeriod cpm 
+				WHERE cpm.CID = c.CID
+				AND cpm.ContractID = cp2.ContractID
 			)
 		LEFT OUTER JOIN	[dbo].[tblVendorAssignments] va ON 
 			va.CID = c.CID 
@@ -213,73 +202,25 @@ BEGIN
 			AND va.ElementType = 1
 		LEFT OUTER JOIN	[dbo].[tblVendorRepository] vr ON 
 			vr.CID = c.[CID] 
-			AND vr.VendorID = va.VendorID
-		LEFT OUTER JOIN	[dbo].[tblOrganization] o ON 
-			o.[CID] = c.CID
-			AND c.[OrgChecksum] = o.[OrgChecksum]		
-		LEFT OUTER JOIN	[dbo].[tblParameterTranslation] pt ON 
-			pt.ParameterType = 7 
-			AND pt.ParameterValue = c.ContractType 
-			AND pt.[Language] = @lang
-		LEFT OUTER JOIN	[dbo].[tblContractCustomTypes] cct ON 
-			cct.CID = c.CID 
-			AND cct.TypeID = c.ContractType
-		left outer join dbo.' + dbo.GenerateCustomFieldTemporaryName(@cid, 4) + N' cf on
-			cf.ElementID = c.ContractID
-			and cf.UserID = @UserID				
-		left outer join lc on
-			lc.CID = c.CID
-			and lc.ContractID = c.ContractID		
-		left outer join cc on
-			cc.CID = c.CID
-			and cc.ContractID = c.ContractID	
-		left outer join oc on
-			oc.CID = c.CID
-			and oc.ContractID = c.ContractID
+			AND vr.VendorID = va.VendorID 
+		LEFT OUTER JOIN dbo.tblOrganization o ON 
+			c.CID = o.CID 
+			AND c.[OrgChecksum] = o.[OrgChecksum]
 		LEFT JOIN dbo.tblContractCustomTypes ct
-    ON c.ContractType = ct.TypeID
-	WHERE 
-		c.CID = @CID
-		AND 
-		(
-			IsNull(c.RestrictOrganization, 0) = 0
-			OR c.ContractID IN 
-			(
-				SELECT
-					c1.[ContractID]
-				FROM 
-					[dbo].[tblContract] c1
-					INNER JOIN [dbo].[tblSystemUserOrgDefinition] def ON 
-						def.CID = c.CID 
-						AND def.UserID = @UserID
-						AND def.OrgChecksum = c.OrgChecksum 
-				WHERE 
-					c1.CID = c.CID
-					AND IsNull(c.RestrictOrganization, 0) > 0
-			)
-		)
-		AND
-		(
-			ISNULL(c.RestrictToGroups, 0) = 0
-			OR @IsAdmin = 1
-			OR EXISTS
-			(
-				SELECT
-					1
-				FROM
-					[dbo].[tblContractGroups] cg
-					INNER JOIN[dbo].[tblSystemUserGroups] sug ON
-						sug.UserID = @UserID 
-						AND cg.GroupID = sug.GroupID
-				WHERE
-					cg.CID = @CID
-					AND cg.[ContractID] = c.[ContractID]
-			)
-		)
-		
-		'
-		+ isnull(@parameters, N'') + N';'
+			ON c.ContractType = ct.TypeID
+		LEFT OUTER JOIN lc on 
+			lc.CID = c.CID 
+			AND lc.ContractID = c.ContractID
+		LEFT OUTER JOIN cc on 
+			cc.CID = c.CID 
+			AND cc.ContractID = c.ContractID
+		LEFT OUTER JOIN oc on 
+			oc.CID = c.CID 
+			AND oc.ContractID = c.ContractID
+	WHERE
+		c.CID = @CID'
 
-	exec sp_executesql @q, @qp, @CID, @UserID, @lang, @UserCurrencyRate, @IsAdmin, @UserCurrency;
+	exec sp_executesql @q, @qp, @CID = @CID, @UserID = @UserID, @lang = @lang, @UserCurrencyRate = @UserCurrencyRate, @IsAdmin = @IsAdmin, @UserCurrency = @UserCurrency
 
 END
+GO
