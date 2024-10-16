@@ -340,9 +340,21 @@ BEGIN
 						      WHEN lu.UpgradedLicenseCount <> '''' THEN CONVERT(VARCHAR(20), lu.UpgradedLicenseCount + l.LegalLicenseCount)
 							  ELSE CONVERT(VARCHAR(20), l.LegalLicenseCount)
 							  END AS ''Quantity'',
+		       					
+							  --Commented out due to new logic
+							  --ISNULL(CONVERT(VARCHAR(10), l.SubscriptionValidFrom, 120), '''') AS ''Subscription Valid From'',
+							  --ISNULL(CONVERT(VARCHAR(10), l.SubscriptionValidTo, 120), '''') AS ''Subscription Valid To'',
 
-							  ISNULL(CONVERT(VARCHAR(10), l.SubscriptionValidFrom, 120), '''') AS ''Subscription Valid From'',
-							  ISNULL(CONVERT(VARCHAR(10), l.SubscriptionValidTo, 120), '''') AS ''Subscription Valid To'',
+		       					CASE 
+							  WHEN l.MaintenanceAccordingtoAgreement = 1 THEN ''''
+							  ELSE ISNULL(CONVERT(VARCHAR(10), l.SubscriptionValidFrom, 120), '''')
+							END AS ''Subscription Valid From'',
+
+							CASE 
+							  WHEN l.MaintenanceAccordingtoAgreement = 1 THEN ''''
+							  ELSE ISNULL(CONVERT(VARCHAR(10), l.SubscriptionValidTo, 120), '''')
+							END AS ''Subscription Valid To'',
+		       
 							  isnull(l.IsSubscription, 0) as ''Is Subscription'',
 
 							  ISNULL(CAST(ROUND(((CASE
