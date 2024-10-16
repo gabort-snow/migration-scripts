@@ -285,8 +285,8 @@ BEGIN
                               l.LicenseID AS ''License ID'',
                               -- DEFAULT COLUMNS 
                               a.Name AS ''Application Name'',
-							  o.FriendlyName AS ''Legal Organization'',
-							  --''ROOT'' as ''Legal Organisation'', --USE to force ROOT for all Licenses
+							  --o.FriendlyName AS ''Legal Organization'',
+							  ''ROOT'' as ''Legal Organisation'', --USE to force ROOT for all Licenses
 							  ISNULL(CONVERT(VARCHAR(10), l.PurchaseDate, 120), '''') AS ''Purchase Date'',
 							  
 							  --Left for troubleshooting
