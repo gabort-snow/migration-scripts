@@ -3,6 +3,8 @@
 --Remove any NULL values found in Custom Fields. Still working to output those as blank instead of NULL.
 --20240812
 ---Added column to show incomplete licenses
+--2024/10/16 - Modified the l.MaintenanceAccordingToAgreement to properly pull data
+--Modified the mp.PeriodFrom and mp.PeriodTo to not pull dates when l.MaintenanceAccordingToAgreement is 0
 
 
 USE [SnowLicenseManager]
@@ -295,6 +297,7 @@ BEGIN
 								WHEN l.[AssignmentType] = 1 THEN ''Computer/datacenter''
 								WHEN l.[AssignmentType] = 2 THEN ''User''
 								WHEN l.[AssignmentType] = 3 THEN ''Site''
+								ELSE ''Review Assignment Type''
 							  END AS ''Assignment Type'',
 
 							  --Left for troubleshooting
@@ -316,15 +319,10 @@ BEGIN
 								WHEN l.Metric = 12 THEN ''Concurrent devices''
 								WHEN l.Metric = 13 THEN ''PVU''
 								WHEN l.Metric = 14 THEN ''CAL (Client Access License)''
-								ELSE ''Review License''
+								ELSE ''Review License Metric''
 							  END AS ''Metric'',
 
-							  --isnULL(l.IsUpgrade,0) as ''Is Upgrade'',
-							  CASE 
-							  WHEN l.IsUpgrade = 0 THEN ''NO''
-							  WHEN l.IsUpgrade = 1 THEN ''YES''
-							  ELSE ''NO''
-							  END AS ''Is Upgrade'',
+							  isnULL(l.IsUpgrade,0) AS ''Is Upgrade'',
 
 							  --isnull(upt.LicenseID,0) as ''Upgrade From License ID'',
 							  CASE 
@@ -359,20 +357,26 @@ BEGIN
 							  isnull(l.IsAutoAllocated,0) as ''Auto allocate (distribute) license'',
 							  isnull(l.AutoAllocateOnce,0) as ''Auto allocate license only once'',
 							  isnull(mp.UpgradeRights, 0) as ''Maintenance Includes Upgrade Rights'',
+							  l.MaintenanceAccordingtoAgreement AS ''Maintenance According to Agreement'',
+							  --Removed to properly export data
+							  --ISNULL(CONVERT(VARCHAR(10), mp.PeriodFrom, 120), '''') AS ''Maintenance and Support Valid From'',
+							  --ISNULL(CONVERT(VARCHAR(10), mp.PeriodTo, 120), '''') AS ''Maintenance and Support Valid To'',
 							  CASE 
-								WHEN l.MaintenanceAccordingtoAgreement IS NULL THEN 1
-								ELSE 0
-                              END AS ''Maintenance According to Agreement'',
-							  ISNULL(CONVERT(VARCHAR(10), mp.PeriodFrom, 120), '''') AS ''Maintenance and Support Valid From'',
-							  ISNULL(CONVERT(VARCHAR(10), mp.PeriodTo, 120), '''') AS ''Maintenance and Support Valid To'',
-							  isnULL(c.[AssignedID],'''') as ''Agreement Number'',
-							  isnULL(l.[ExternalID],'''') as ''External ID'',
-							  isnULL(l.[Vendor],'''') as ''Vendor/Reseller'',
-							  isnULL(l.[LicenseProofLocation],'''') as ''License Proof Location'',
-							  isnULL(l.Notes,'''') as ''Purchase Notes'',
-							  isnULL(l.[LicenseKeys],'''') as ''Serial numbers/license keys'',
-							  isnULL(l.[MediaStorage],'''') as ''Installation Media Location'',
-							  isnULL(l.[InvoiceReference],'''') as ''Purchase Invoice Reference'',
+							  WHEN l.MaintenanceAccordingtoAgreement = 1 THEN ''''
+							  ELSE ISNULL(CONVERT(VARCHAR(10), mp.PeriodFrom, 120), '''')
+							END AS ''Maintenance and Support Valid From'',
+							CASE 
+							  WHEN l.MaintenanceAccordingtoAgreement = 1 THEN ''''
+							  ELSE ISNULL(CONVERT(VARCHAR(10), mp.PeriodTo, 120), '''')
+							END AS ''Maintenance and Support Valid To'',
+							  isNULL(c.[AssignedID],'''') as ''Agreement Number'',
+							  isNULL(l.[ExternalID],'''') as ''External ID'',
+							  isNULL(l.[Vendor],'''') as ''Vendor/Reseller'',
+							  isNULL(l.[LicenseProofLocation],'''') as ''License Proof Location'',
+							  isNULL(l.Notes,'''') as ''Purchase Notes'',
+							  isNULL(l.[LicenseKeys],'''') as ''Serial numbers/license keys'',
+							  isNULL(l.[MediaStorage],'''') as ''Installation Media Location'',
+							  isNULL(l.[InvoiceReference],'''') as ''Purchase Invoice Reference'',
 							  ISNULL(l.ProductDescription, skur.ProductName) as ''Product Description'',
 							  isnULL(msc.TotalMaintenanceCost,0) as ''Maintenance Cost'',
 							  isnULL(msc.TotalSupportCost,0) as ''Support Cost'',
