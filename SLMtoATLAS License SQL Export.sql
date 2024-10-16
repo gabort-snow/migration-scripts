@@ -369,7 +369,7 @@ BEGIN
 							  WHEN l.MaintenanceAccordingtoAgreement = 1 THEN ''''
 							  ELSE ISNULL(CONVERT(VARCHAR(10), mp.PeriodTo, 120), '''')
 							END AS ''Maintenance and Support Valid To'',
-							  isNULL(c.[AssignedID],'''') as ''Agreement Number'',
+							  isNULL(c.[AssignedID],'''') as ''Agreement'',
 							  isNULL(l.[ExternalID],'''') as ''External ID'',
 							  isNULL(l.[Vendor],'''') as ''Vendor/Reseller'',
 							  isNULL(l.[LicenseProofLocation],'''') as ''License Proof Location'',
