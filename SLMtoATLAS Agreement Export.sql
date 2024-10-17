@@ -179,8 +179,8 @@ BEGIN
 		ISNULL(CONVERT(varchar(10), cp2.ValidFrom, 23), '''') as ''Valid From'', -- Convert to YYYY-MM-DD
 		ISNULL(CONVERT(varchar(10), cp2.ValidTo, 23), '''') as ''Valid To'',  -- Convert to YYYY-MM-DD
 		c.AlertOnExpiration as ''Alert On Expiration'',
-		--''ROOT'' as LegalOrganisation, --USE if Organization is being defaulted to ROOT
-		COALESCE(o.FriendlyName, ''ROOT'') as ''Legal Organisation'', --This will default missing values to ROOT
+		''ROOT'' as LegalOrganisation, --USE if Organization is being defaulted to ROOT
+		--COALESCE(o.FriendlyName, ''ROOT'') as ''Legal Organisation'', --This will default missing values to ROOT
 		CASE
 			WHEN c.RestrictOrganization = 0 THEN ''NO''
 			WHEN c.RestrictOrganization = 1 THEN ''YES''
