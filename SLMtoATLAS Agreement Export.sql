@@ -125,6 +125,7 @@ BEGIN
 	set @q = @q + N'
 
 	select
+		c.ContractID,
 		CASE
         WHEN vr.VendorName IS NULL OR vr.VendorName = '''' THEN
             CASE
